@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <ctime>
 #include <sstream>
 #include <stdio.h>
 #include <string.h>
@@ -23,12 +24,25 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #pragma warning(disable:4996)
 #endif
 
+bool _bAddDate = false;
+
 std::string generateHeader(char const* rev_str)
 {
   std::ostringstream newData;
   newData << "#ifndef __REVISION_H__" << std::endl;
   newData << "#define __REVISION_H__" << std::endl;
   newData << "#define REVISION_ID " << rev_str << std::endl;
+
+  if (_bAddDate)
+  {
+    time_t t = time(0);
+    struct tm *pTime = localtime(&t);
+
+    newData << "#define REVISION_BUILD_YEAR " << (pTime->tm_year + 1900) << std::endl;
+    newData << "#define REVISION_BUILD_MONTH " << pTime->tm_mon + 1 << std::endl;
+    newData << "#define REVISION_BUILD_DAY " << pTime->tm_mday << std::endl;
+  }
+
   newData << "#endif // __REVISION_H__" << std::endl;
   return newData.str();
 }
@@ -65,8 +79,13 @@ int main(int argc, char** argv)
         strOutFile = argv[k];
         continue;
 
+      case 'd':
+        printf("[GitGetVer] Enabled build date info output.\n");
+        _bAddDate = true;
+        break;
+
       default:
-        printf("Unknown option %s", argv[k]);
+        printf("[GitGetVer] Unknown option %s", argv[k]);
         return 1;
     }
   }
@@ -77,7 +96,7 @@ int main(int argc, char** argv)
   bool bHasResult = false;
 
   FILE * pTempFile;
-    
+
   char strBuffer[16];
   memset(&strBuffer[0], 0, 16);
 
@@ -116,18 +135,19 @@ int main(int argc, char** argv)
 
   // Get existed header data for compare.
   std::string oldData;
-
-  if (FILE* HeaderFile = fopen(strOutFile.c_str(), "rb"))
+  FILE* pHeaderFile = fopen(strOutFile.c_str(), "rb");
+  
+  if (pHeaderFile)
   {
-    while (!feof(HeaderFile))
+    while (!feof(pHeaderFile))
     {
-      int c = fgetc(HeaderFile);
+      int c = fgetc(pHeaderFile);
       if (c < 0)
         break;
       oldData += (char)c;
     }
 
-    fclose(HeaderFile);
+    fclose(pHeaderFile);
   }
 
   // If datas are different then we need to replace old with new one.
