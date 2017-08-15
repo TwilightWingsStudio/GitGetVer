@@ -221,8 +221,6 @@ int main(int argc, char** argv)
   // New data extraction.
   std::string newData;
 
-  bool bHasResult = false;
-
   FILE * pTempFile;
 
   char strBuffer[16];
@@ -262,13 +260,14 @@ int main(int argc, char** argv)
 
   printf("[GitGetVer] Got revision number: %lu\n", iRevNumber);
 
-  memset(&strBuffer[0], 0, 16);
-  std::string strRevision = std::to_string(iRevNumber);
+  std::ostringstream strStream;
+  strStream << iRevNumber;
 
   switch (_eLanguage)
   {
-    case EPL_CPP: newData = generateHeader(&strRevision[0]); break;
-    case EPL_JAVA: newData = generateJava(&strRevision[0]); break;
+    case EPL_CPP: newData = generateHeader(strStream.str().c_str()); break;
+    case EPL_JAVA: newData = generateJava(strStream.str().c_str()); break;
+    case EPL_CSHARP: break;
   }
 
   // Get existed header data for compare.
