@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include <ctime>
 #include <sstream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef WIN32
@@ -262,12 +263,12 @@ int main(int argc, char** argv)
   printf("[GitGetVer] Got revision number: %lu\n", iRevNumber);
 
   memset(&strBuffer[0], 0, 16);
-  itoa(iRevNumber, &strBuffer[0], 10);
+  std::string strRevision = std::to_string(iRevNumber);
 
   switch (_eLanguage)
   {
-    case EPL_CPP: newData = generateHeader(&strBuffer[0]); break;
-    case EPL_JAVA: newData = generateJava(&strBuffer[0]); break;
+    case EPL_CPP: newData = generateHeader(&strRevision[0]); break;
+    case EPL_JAVA: newData = generateJava(&strRevision[0]); break;
   }
 
   // Get existed header data for compare.
