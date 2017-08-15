@@ -165,11 +165,40 @@ int main(int argc, char** argv)
       } break;
 
       case 'h': {
-        // TODO: Write help command.
+        printf("\n");
+        printf("[GitGetVer] - an open source version generator utility.\n");
+        printf("\n");
+
+        printf("Syntax: gitgetver [options]\n");
+        printf("\n");
+        printf("Available options are:\n");
+
+        printf(" * -j\n");
+        printf("   Switch language to Java.\n");
+
+        printf("\n");
+
+        printf(" * -d\n");
+        printf("   Enable build date printout into file.\n");
+
+        printf("\n");
+
+        printf(" * -o <filename>\n");
+        printf("   Output file name.\n");
+
+        printf("\n");
+
+        printf(" * -p <package>\n");
+        printf("   Java package name which will be print into file.\n");
+
+        printf("\n");
+
+        return 0;
+
       } break;
 
       default: {
-        printf("[GitGetVer] Error! Unknown option %s", argv[k]);
+        printf("[GitGetVer] Error! Unknown option %s.\nUse \"-h\" or \"-help\" option to get list of available options!\n", argv[k]);
         return 1;
       }
     }
