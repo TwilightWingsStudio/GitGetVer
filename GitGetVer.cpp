@@ -24,11 +24,38 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #pragma warning(disable:4996)
 #endif
 
-bool _bAddDate = false;
+enum EProgrammingLanguage
+{
+  EPL_CPP,
+  EPL_JAVA,
+  EPL_CSHARP
+};
 
+// Globals
+bool _bAddDate = false;
+bool _bCustomOutput = false;
+EProgrammingLanguage _eLanguage = EPL_CPP;
+std::string _strOutFile = "revision.h";
+std::string _strPackageName = "";
+
+// --------------------------------------------------------------------------------------
+// Returns filename without exension.
+// --------------------------------------------------------------------------------------
+std::string removeExtension(const std::string& filename)
+{
+  unsigned int ulOffset = filename.find_last_of(".");
+  if (ulOffset == std::string::npos) return filename;
+  return filename.substr(0, ulOffset);
+}
+
+// --------------------------------------------------------------------------------------
+// Generates content for C/C++ header file.
+// --------------------------------------------------------------------------------------
 std::string generateHeader(char const* rev_str)
 {
   std::ostringstream newData;
+
+  // Add include check.
   newData << "#ifndef __REVISION_H__" << std::endl;
   newData << "#define __REVISION_H__" << std::endl;
   newData << "#define REVISION_ID " << rev_str << std::endl;
@@ -48,12 +75,45 @@ std::string generateHeader(char const* rev_str)
 }
 
 // --------------------------------------------------------------------------------------
+// Generates content for Java source file.
+// --------------------------------------------------------------------------------------
+std::string generateJava(char const* rev_str)
+{
+  std::ostringstream newData;
+  std::string fileNameNoExt = removeExtension(_strOutFile);
+
+  // If we have package name then print it there.
+  if (_strPackageName != "") {
+    newData << "package " << _strPackageName << ";" << std::endl;
+    newData << std::endl;
+  }
+
+  newData << "public class " << fileNameNoExt << " {" << std::endl;
+
+  newData << "  public static int REVISION_ID = " << rev_str << ";" << std::endl;
+
+  if (_bAddDate)
+  {
+    time_t t = time(0);
+    struct tm *pTime = localtime(&t);
+
+    newData << std::endl;
+    newData << "  public static int REVISION_BUILD_YEAR = " << (pTime->tm_year + 1900) << ";" << std::endl;
+    newData << "  public static int REVISION_BUILD_MONTH = " << pTime->tm_mon + 1 << ";" << std::endl;
+    newData << "  public static int REVISION_BUILD_DAY = " << pTime->tm_mday << ";" << std::endl;
+  }
+
+  newData << "}" << std::endl;
+
+  return newData.str();
+}
+
+// --------------------------------------------------------------------------------------
 // The entry point.
 // --------------------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
   std::string strPath;
-  std::string strOutFile = "revision.h";
 
   // Cycle through arguments.
   for (int k = 1; k <= argc; ++k)
@@ -73,21 +133,59 @@ int main(int argc, char** argv)
 
     switch (argv[k][1])
     {
-      case 'o':
+      case 'o': {
         if (++k == argc)
-          return 1;
-        strOutFile = argv[k];
-        continue;
+            return 1;
+        _strOutFile = argv[k];
 
-      case 'd':
+        _bCustomOutput = true;
+        continue;
+      } break;
+
+      case 'd': {
         printf("[GitGetVer] Enabled build date info output.\n");
         _bAddDate = true;
         break;
+      }
 
-      default:
-        printf("[GitGetVer] Unknown option %s", argv[k]);
+      case 'p': {
+        if (++k == argc)
+          return 1;
+        _strPackageName = argv[k];
+
+        continue;
+      } break;
+
+      case 'j': {
+        _eLanguage = EPL_JAVA;
+
+        if (!_bCustomOutput) {
+          _strOutFile = "Revision.java";
+        }
+      } break;
+
+      case 'h': {
+        // TODO: Write help command.
+      } break;
+
+      default: {
+        printf("[GitGetVer] Error! Unknown option %s", argv[k]);
         return 1;
+      }
     }
+  }
+
+  // Output language info.
+  switch (_eLanguage)
+  {
+    case EPL_CPP:    printf("[GitGetVer] Selected Language: C++ (default)\n"); break;
+
+    case EPL_JAVA: {
+      printf("[GitGetVer] Selected Language: Java\n");
+      printf("[GitGetVer] Java Package Name: %s\n", &_strPackageName);
+    } break;
+
+    case EPL_CSHARP: printf("[GitGetVer] Selected Language: C#\n"); break;
   }
 
   // New data extraction.
@@ -100,7 +198,13 @@ int main(int argc, char** argv)
   char strBuffer[16];
   memset(&strBuffer[0], 0, 16);
 
-  system("git rev-list --count HEAD >> temp.txt");
+  int iExitCode = system("git rev-list --count HEAD >> temp.txt");
+
+  if (iExitCode != 0) {
+    printf("[GitGetVer] Error! Got exit code %d from Git!\n", iExitCode);
+    return 1;
+  }
+
   pTempFile = fopen("temp.txt", "r");
 
   if (pTempFile == NULL) {
@@ -131,11 +235,15 @@ int main(int argc, char** argv)
   memset(&strBuffer[0], 0, 16);
   itoa(iRevNumber, &strBuffer[0], 10);
 
-  newData = generateHeader(&strBuffer[0]);
+  switch (_eLanguage)
+  {
+    case EPL_CPP: newData = generateHeader(&strBuffer[0]); break;
+    case EPL_JAVA: newData = generateJava(&strBuffer[0]); break;
+  }
 
   // Get existed header data for compare.
   std::string oldData;
-  FILE* pHeaderFile = fopen(strOutFile.c_str(), "rb");
+  FILE* pHeaderFile = fopen(_strOutFile.c_str(), "rb");
   
   if (pHeaderFile)
   {
@@ -153,7 +261,7 @@ int main(int argc, char** argv)
   // If datas are different then we need to replace old with new one.
   if (newData != oldData)
   {
-    FILE* pOutputFile = fopen(strOutFile.c_str(), "wb");
+    FILE* pOutputFile = fopen(_strOutFile.c_str(), "wb");
 
     if (pOutputFile)
     {
