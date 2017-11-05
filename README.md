@@ -4,8 +4,10 @@ This is small console utility which creates file revision.h and prints there cur
 ## Building
 I din't put any project files for becase it is really small program. You can do it yourself.
 
-I used VS2013 to build it on Windows.
-
+Tested with:
+ - VS2013 to build it on Windows.
+ - G++ 4.9.2 to build it on Raspberry Pi.
+ 
 ## Running
 To run it GitGetVer executable (or workfolder) should be inside of repository folder.
 The PATH environment variable should contain path to git.exe to be able get data.
