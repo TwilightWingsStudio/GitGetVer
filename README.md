@@ -2,7 +2,7 @@
 This is small console utility which creates file revision.h and prints there current commit number as C/C++ define.
 
 ## Building
-I din't put any project files for becase it is really small program. You can do it yourself.
+Here is QtCreator project file, but program consist of one file, so you can create your own project file for any IDE or just build it with console.
 
 Tested with:
  - VS2013 to build it on Windows.
